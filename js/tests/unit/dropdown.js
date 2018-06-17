@@ -247,7 +247,7 @@ $(function () {
         assert.ok($dropdown.parent('.dropdown').hasClass('show'), '"show" class added on click')
         done()
       })
-    $dropdown[0].dispatchEvent(new Event('click'))
+    $dropdown[0].click()
   })
 
   QUnit.test('should remove "show" class if body is clicked', function (assert) {
@@ -857,11 +857,15 @@ $(function () {
 
                 assert.ok(document.activeElement === $('#item1')[0], 'item1 is focused')
                 done()
-              }).bootstrapDropdown('toggle')
-            $input[0].dispatchEvent(new Event('click'))
+              })
+              .bootstrapDropdown('toggle')
+
+            $input.bootstrapDropdown('toggle')
           })
-        $input[0].dispatchEvent(new Event('click'))
+
+        $input.bootstrapDropdown('toggle')
       })
+
     $input[0].dispatchEvent(new Event('click'))
   })
 
@@ -931,10 +935,13 @@ $(function () {
 
                 assert.ok(document.activeElement === $('#item1')[0], 'item1 is focused')
                 done()
-              }).bootstrapDropdown('toggle')
-            $textarea[0].dispatchEvent(new Event('click'))
+              })
+              .bootstrapDropdown('toggle')
+
+            $textarea.bootstrapDropdown('toggle')
           })
-        $textarea[0].dispatchEvent(new Event('click'))
+
+        $textarea.bootstrapDropdown('toggle')
       })
     $textarea[0].dispatchEvent(new Event('click'))
   })
