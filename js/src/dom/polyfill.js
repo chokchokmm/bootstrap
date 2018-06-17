@@ -9,8 +9,7 @@ import Util from '../util'
 
 /* istanbul ignore next */
 const Polyfill = (() => {
-  // defaultPrevented is broken in IE.
-  // https://connect.microsoft.com/IE/feedback/details/790389/event-defaultprevented-returns-false-after-preventdefault-was-called
+  // defaultPrevented is broken in IE
   const workingDefaultPrevented = (() => {
     const e = document.createEvent('CustomEvent')
     e.initEvent('Bootstrap', true, true)
@@ -18,7 +17,22 @@ const Polyfill = (() => {
     return e.defaultPrevented
   })()
 
-  let defaultPreventedPreservedOnDispatch = true
+  if (!workingDefaultPrevented) {
+    const origPreventDefault = Event.prototype.preventDefault
+    Event.prototype.preventDefault = function () {
+      if (!this.cancelable) {
+        return
+      }
+
+      origPreventDefault.call(this)
+      Object.defineProperty(this, 'defaultPrevented', {
+        get() {
+          return true
+        },
+        configurable: true
+      })
+    }
+  }
 
   // CustomEvent polyfill for IE (see: https://mzl.la/2v76Zvn)
   if (typeof window.CustomEvent !== 'function') {
@@ -30,41 +44,25 @@ const Polyfill = (() => {
       }
       const evt = document.createEvent('CustomEvent')
       evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail)
-      if (!workingDefaultPrevented) {
-        const origPreventDefault = Event.prototype.preventDefault
-        evt.preventDefault = () => {
-          if (!evt.cancelable) {
-            return
-          }
-
-          origPreventDefault.call(evt)
-          Object.defineProperty(evt, 'defaultPrevented', {
-            get() {
-              return true
-            },
-            configurable: true
-          })
-        }
-      }
       return evt
     }
 
     window.CustomEvent.prototype = window.Event.prototype
-  } else {
-    // MSEdge resets defaultPrevented flag upon dispatchEvent call if at least one listener is attached
-    defaultPreventedPreservedOnDispatch = (() => {
-      const e = new CustomEvent('Bootstrap', {
-        cancelable: true
-      })
-
-      const element = document.createElement('div')
-      element.addEventListener('Bootstrap', () => null)
-
-      e.preventDefault()
-      element.dispatchEvent(e)
-      return e.defaultPrevented
-    })()
   }
+
+  // MSEdge resets defaultPrevented flag upon dispatchEvent call if at least one listener is attached
+  const defaultPreventedPreservedOnDispatch = (() => {
+    const e = new CustomEvent('Bootstrap', {
+      cancelable: true
+    })
+
+    const element = document.createElement('div')
+    element.addEventListener('Bootstrap', () => null)
+
+    e.preventDefault()
+    element.dispatchEvent(e)
+    return e.defaultPrevented
+  })()
 
   // Event constructor shim
   if (!window.Event || typeof window.Event !== 'function') {
@@ -185,9 +183,7 @@ const Polyfill = (() => {
   }
 
   return {
-    get defaultPreventedPreservedOnDispatch() {
-      return defaultPreventedPreservedOnDispatch
-    },
+    defaultPreventedPreservedOnDispatch,
     focusIn: typeof window.onfocusin === 'undefined',
     closest,
     find,
